@@ -1,3 +1,4 @@
+from base64 import b64decode
 from enum import IntFlag
 from importlib.resources import files
 import json
@@ -59,6 +60,8 @@ class GoveeLightCapabilities:
         segments: list[bytes] | None = None,
         scenes: dict[str, bytes] | None = None,
         temperature_range: tuple[int, int] | None = None,
+        *,
+        parameterized_scenes: dict[str, tuple[int, bytes]] | None = None,
     ) -> None:
         self.features = features
         self.temperature_range = _normalize_temperature_range(temperature_range)
@@ -74,6 +77,11 @@ class GoveeLightCapabilities:
         self.scenes = (
             dict(scenes) if scenes and features & GoveeLightFeatures.SCENES else {}
         )
+        self.parameterized_scenes = (
+            dict(parameterized_scenes)
+            if parameterized_scenes and features & GoveeLightFeatures.SCENES
+            else {}
+        )
 
     @property
     def segments_count(self) -> int:
@@ -81,7 +89,7 @@ class GoveeLightCapabilities:
 
     @property
     def available_scenes(self) -> list[str]:
-        return list(self.scenes.keys())
+        return [*self.scenes, *self.parameterized_scenes]
 
     def __repr__(self) -> str:
         return (
@@ -243,19 +251,32 @@ def _with_model_scenes(
     capabilities object, like entries already share BASIC_CAPABILITIES.
     """
     model_scenes = _load_model_scenes()
+    parameterized = json.loads(
+        files(__package__)
+        .joinpath(DATA_DIR, "parameterized_scenes.json")
+        .read_text("utf-8")
+    )
     no_scenes: dict[str, bytes] = {}
     # Keyed on object identity: scene sets are shared dicts from the file.
-    shared: dict[tuple[int, int], GoveeLightCapabilities] = {}
+    shared: dict[tuple[int, int, str | None], GoveeLightCapabilities] = {}
     result: dict[str, GoveeLightCapabilities] = {}
     for sku, base in registry.items():
         scenes = model_scenes.get(sku, no_scenes)
-        key = (id(base), id(scenes))
+        effects = parameterized.get(sku, {})
+        key = (id(base), id(scenes), sku if effects else None)
         if key not in shared:
             features = base.features & ~GoveeLightFeatures.SCENES
-            if scenes:
+            if scenes or effects:
                 features |= GoveeLightFeatures.SCENES
             shared[key] = GoveeLightCapabilities(
-                features, base.segments, scenes, base.temperature_range
+                features,
+                base.segments,
+                scenes,
+                base.temperature_range,
+                parameterized_scenes={
+                    name: (code, b64decode(payload, validate=True))
+                    for name, (code, payload) in effects.items()
+                },
             )
         result[sku] = shared[key]
     return result

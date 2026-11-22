@@ -63,7 +63,7 @@ def generate() -> str:
         segments = (
             str(capabilities.segments_count) if capabilities.segments_count else "-"
         )
-        scenes = ", ".join(capabilities.available_scenes) or NO
+        scenes = ", ".join(capabilities.scenes) or NO
         if features & GoveeLightFeatures.COLOR_KELVIN_TEMPERATURE:
             min_kelvin, max_kelvin = capabilities.temperature_range
             temperature_range = f"{min_kelvin}-{max_kelvin}"

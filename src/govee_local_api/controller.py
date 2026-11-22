@@ -741,7 +741,12 @@ class GoveeController:
             self._logger.warning("Scenes are not supported by device %s", device)
             return
 
-        scene_code: bytes | None = device.capabilities.scenes.get(scene.lower(), None)
+        name = scene.lower()
+        if effect := device.capabilities.parameterized_scenes.get(name):
+            await self.set_scene_code(device, *effect)
+            return
+
+        scene_code = device.capabilities.scenes.get(name)
         if not scene_code:
             self._logger.warning(
                 "Scene %s is not available for device %s", scene, device
