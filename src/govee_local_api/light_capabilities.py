@@ -220,9 +220,7 @@ def _load_model_scenes() -> dict[str, dict[str, bytes]]:
     single byte SceneMessages can play.
     """
     data = json.loads(
-        files("govee_local_api")
-        .joinpath(DATA_DIR, MODEL_SCENES_FILE)
-        .read_text("utf-8")
+        files(__package__).joinpath(DATA_DIR, MODEL_SCENES_FILE).read_text("utf-8")
     )
     scene_sets = {
         set_id: {name: bytes([code]) for name, code in scenes.items()}
@@ -290,6 +288,7 @@ GOVEE_LIGHT_CAPABILITIES: dict[str, GoveeLightCapabilities] = {
     "H3510": BASIC_CAPABILITIES,
     "H3511": BASIC_CAPABILITIES,
     "H3751": BASIC_CAPABILITIES,
+    "H3A53": BASIC_CAPABILITIES,
     "H6004": BASIC_CAPABILITIES,
     "H6006": BASIC_CAPABILITIES,  # Issue #133 - temp confirmed via Cloud API (2000-9000K)
     "H6008": BASIC_CAPABILITIES,
