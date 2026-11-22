@@ -1,4 +1,5 @@
 import asyncio
+import json
 import unittest
 from unittest.mock import AsyncMock, Mock
 from govee_local_api.device import GoveeDevice
@@ -10,7 +11,7 @@ from govee_local_api.light_capabilities import (
     GOVEE_LIGHT_CAPABILITIES,
     create_with_capabilities,
 )
-from govee_local_api.message import ScanResponse
+from govee_local_api.message import ScanResponse, SceneCodeMessage
 
 
 class TestGoveeDevice(unittest.TestCase):
@@ -233,3 +234,30 @@ class TestControllerTemperatureRange(unittest.TestCase):
 
         assert self._sent_temperature(device, 99999) == 9000
         assert self._sent_temperature(device, 1) == 2000
+
+
+def test_h3a53_named_effect_uses_parameter_frames():
+    controller = GoveeController()
+    device = GoveeDevice(
+        controller,
+        "192.0.2.1",
+        "AA:BB:CC:DD:EE:FF",
+        "H3A53",
+        GOVEE_LIGHT_CAPABILITIES["H3A53"],
+    )
+    assert "christmas" in device.capabilities.available_scenes
+    with unittest.mock.patch.object(controller, "_send_message") as send:
+        asyncio.run(device.set_scene("Christmas"))
+    message, target = send.call_args.args
+    assert target is device
+    assert isinstance(message, SceneCodeMessage)
+    assert len(json.loads(bytes(message))["msg"]["data"]["command"]) > 1
+
+
+def test_h3a53_catalog_has_unique_encodable_effects():
+    capabilities = GOVEE_LIGHT_CAPABILITIES["H3A53"]
+    assert len(capabilities.parameterized_scenes) == 87
+    assert not capabilities.scenes.keys() & capabilities.parameterized_scenes.keys()
+    for code, parameters in capabilities.parameterized_scenes.values():
+        assert parameters
+        assert bytes(SceneCodeMessage(code, parameters))

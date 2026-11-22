@@ -187,10 +187,10 @@ Register a model with a custom range in `GOVEE_LIGHT_CAPABILITIES`:
 
 ### Library Scenes
 
-`set_scene()` plays one of the model's firmware scenes, listed in
-`device.capabilities.available_scenes`. They come from Govee's per-model scene
-library and are the ones that play from their scene code alone; see
-[SUPPORTED_DEVICES.md](SUPPORTED_DEVICES.md) for each model's list.
+`set_scene()` plays a model scene by name from
+`device.capabilities.available_scenes`. See [SUPPORTED_DEVICES.md](SUPPORTED_DEVICES.md)
+for firmware scenes that play from their code alone. The H3A53 also includes
+87 parameterized scenes from Govee's per-model catalog, such as `christmas`.
 
 ```python
 await device.set_scene("sunset")
